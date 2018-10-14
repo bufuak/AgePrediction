@@ -1,0 +1,12 @@
+trainedfaces_1_haar 431 DE KALDIM
+
+trainedfaces_1_deleted 1811 yüz  / 2056 fotoğraf
+trainedfaces_2_deleted 1750 yüz  / 2057 fotoğraf
+valid_deleted	1247 yüz / 1500 fotoğraf
++
+----------------------------------------------------
+
+4808 yüz /  5613 fotoğraf %85 face detection.
+
+
+----------------------------------------------------
