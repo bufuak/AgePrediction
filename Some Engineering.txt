@@ -10,3 +10,52 @@ valid_deleted	1247 yüz / 1500 fotoğraf
 
 
 ----------------------------------------------------
+
+
+testfaces_1_deleted 565 yüz / 996 fotoğraf
+testfaces_2_deleted 578 yüz / 982 fotoğraf
+
++
+------------------------------------------------
+
+1143 yüz / 1978 fotoğraf %57 face detection.
+
+__________________________________________________
+||||||||||||||||||||||||||||||||||||||||||||||||||
+__________________________________________________
+
+DEEP
+-------------------------------------------------
+
+train_deep 3789 yüz / 4112 fotoğraf
+valid_deep 1363 yüz / 1500 fotoğraf
++
+-------------------------------------------------
+
+5152 yüz / 5612 fotoğraf %91.8 face detection
+
+test_deep 1864 yüz / 1978 fotoğraf 
+%94 face detection
+
+
+___________________________________________________
+Adam opt.
+___________________________________________________
+
+Overfitted model
+%35 accuracy in test. saved as overfitted35.
+
+Augmented model
+%21 accuracy in test. augment is not helpful.
+
+______________________________________________________
+Sgd lr=0.01
+______________________________________________________
+%31 accuracy in test. augmented. sgd optimizer helped.
+
+Without augmentation.
+sgd some weird parameters %27
+
+only sgd
+
+
