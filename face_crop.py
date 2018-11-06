@@ -1,16 +1,15 @@
-from matplotlib import pyplot as plt
 import numpy as np
 import cv2 as cv
 import os
 import time
-import csv
 from PIL import Image 
 import numpy
+import csv
 import shutil
 
 
 def detect_face(image):
-    face_cascade = cv.CascadeClassifier('.\\Documents\\opencv-3.4.1\\data\\haarcascades_cuda\\haarcascade_frontalface_default.xml')
+    face_cascade = cv.CascadeClassifier('.\\Documents\\opencv-3.4.1\\data\\haarcascades\\haarcascade_frontalface_default.xml')
     gray = cv.cvtColor(image, cv.COLOR_BGR2GRAY)
     faces = []
     faces = face_cascade.detectMultiScale(gray,
@@ -27,46 +26,174 @@ def detect_face(image):
 
     return sub_face
 
+def detect_face_deep(image):
+	save = image
+	print("[INFO] loading model...")
+	net = cv.dnn.readNetFromCaffe("deploy.prototxt.txt", "res10_300x300_ssd_iter_140000.caffemodel")
 
-def function(dir):
+	# load the input image and construct an input blob for the image
+	# by resizing to a fixed 300x300 pixels and then normalizing it
+	(h, w) = image.shape[:2]
+	blob = cv.dnn.blobFromImage(cv.resize(image, (300, 300)), 1.0,
+		(300, 300), (104.0, 177.0, 123.0))
+
+	# pass the blob through the network and obtain the detections and
+	# predictions
+	print("[INFO] computing object detections...")
+	net.setInput(blob)
+	detections = net.forward()
+	bestConfidence = 0.0
+	bestsX,bestsY,besteX,besteY = 0,0,0,0
+	# loop over the detections
+	for i in range(0, detections.shape[2]):
+		# extract the confidence (i.e., probability) associated with the
+		# prediction
+		confidence = detections[0, 0, i, 2]
+
+		# filter out weak detections by ensuring the `confidence` is
+		# greater than the minimum confidence
+		if confidence > 0.5:
+			if confidence>bestConfidence:
+				bestConfidence = confidence
+				# compute the (x, y)-coordinates of the bounding box for the
+				# object
+				box = detections[0, 0, i, 3:7] * np.array([w, h, w, h])
+				(startX, startY, endX, endY) = box.astype("int")
+				bestsX,bestsY,besteX,besteY = startX,startY,endX,endY
+
+	# if(bestsX >= 300 or bestsY >=300 or besteX >=300 or besteY >= 300):
+	# 	return save
+	print(besteX,h,besteY,w)
+	if besteX>w or besteY>h or besteX<=0 or besteY<=0:
+		sub_face = save
+		returnValue = 0
+	else:
+		sub_face = image[bestsY:besteY, bestsX:besteX]
+		returnValue = 1
+	return sub_face,returnValue
+
+
+def cropAllWithDeep(dir,destination,backup):
+	start_time = time.time()
 	directory = os.fsencode(dir)
-	errors = []
-	noface = 0
-	moreface = 0
-	minSizes = [(20,20)]
-	scaleFactors = [1.01]
+	f = open(dir+".txt","a+")
+	filecount = 0
+	for file in os.listdir(directory):
+		filecount += 1
+		filename = os.fsdecode(file)
+		print(filename)
+		if filename.endswith(".png") or filename.endswith(".jpg"): 
+			path = ".\\" + dir + "\\" + filename
+			print(path)
+			img = cv.imread(path)
+			face,returnValue = detect_face_deep(img)
+			if returnValue == 0:
+				f.write(path)
+			else:
+				cv.imwrite('.\\'+ destination + '\\' + filename ,face)
+				os.rename(path, '.\\' + backup + '\\' + filename)
 
-	results = []
+	f.close()
+	print(filecount , " files cropped in Time:" , time.time() - start_time)
 
-	for scale in scaleFactors:
-		for minSize in minSizes:
-			start_time = time.time()
-			noface = 0
-			moreface = 0
-			filecount = 0
-			for file in os.listdir(directory):
-			    filename = os.fsdecode(file)
-			    if filename.endswith(".png") or filename.endswith(".jpg"): 
-			        path = ".\\" + dir + "\\" + filename
-			        print(path)
-			        img = cv.imread(path)
-			        print("detecting face")
-			        face = detect_face(img)
-			        print("detected")
-			        if len(face) != 0:
-			        	scaledface = cv.resize(face,(256,256))
-			        else:
-			        	scaledface = cv.resize(img,(256,256))
-			        
-			        cv.imwrite('.\\'+ dir +'_haar\\' + filename ,scaledface)
-			        os.rename(path, '.\\' + dir +'2\\' + filename)
-			        print(directory)
 
+
+
+def cropAllFaces(dir,destination,backup):
+	start_time = time.time()
+	directory = os.fsencode(dir)
+	filecount = 0
+	for file in os.listdir(directory):
+	    filecount += 1
+	    filename = os.fsdecode(file)
+	    print(filename)
+	    if filename.endswith(".png") or filename.endswith(".jpg"): 
+	        path = ".\\" + dir + "\\" + filename
+	        img = cv.imread(path)
+	        face = detect_face(img)
+	        if len(face) != 0:
+	        	scaledface = cv.resize(face,(256,256))
+	        else:
+	        	scaledface = cv.resize(img,(256,256))
+	        
+	        cv.imwrite('.\\'+ destination + '\\' + filename ,scaledface)
+	        os.rename(path, '.\\' + backup + '\\' + filename)
+
+	print(filecount , " files cropped in Time:" , time.time() - start_time)
+
+
+def labelAll():
+	bins = [0.0, 6.0, 13.0, 20.0, 27.0, 34.0, 41.0, 48.0, 55.0, 62.0,np.inf]
+	labels = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+	# with open('ground_truth/train_gt.csv', 'r') as f:
+	#     reader = csv.reader(f)
+	#     mydict = dict((rows[0],rows[1]) for rows in reader)
+	# labelSplit("train_deep",mydict,bins,labels)
+
+	# with open('ground_truth/valid_gt.csv', 'r') as f:
+	#     reader = csv.reader(f)
+	#     mydict = dict((rows[0],rows[1]) for rows in reader)
+	# labelSplit("valid_deep",mydict,bins,labels)
+	with open('ground_truth/test_gt.csv', 'r') as f:
+	    reader = csv.reader(f)
+	    mydict = dict((rows[0],rows[1]) for rows in reader)
+	labelSplit("test_deep",mydict,bins,labels)
+
+
+def labelSplit(dir,mydict,bins,labels):
+	directory = os.fsencode(dir)
 	
-function("valid")
+	filecount = 0
+	for file in os.listdir(directory):
+	    filecount += 1
+	    filename = os.fsdecode(file)
+	    print(filename)
+	    if filename.endswith(".png") or filename.endswith(".jpg"): 
+	        path = ".\\" + dir + "\\" + filename
+	        where = arrangeLabel(mydict.get(filename),bins,labels)
+	        shutil.copy2(path,'dataset_'+str(dir)+'\\'+str(where))
+	        #os.rename(path, '.\\' + backup + '\\' + filename)
+
+	#print(filecount , " files cropped in Time:" , time.time() - start_time)
 
 
+def arrangeLabel(age,bins,labels):
+    for index in range(len(bins)):
+        if float(age) > bins[index]:
+            continue;
+        else:
+            return labels[index-1]
+    return labels[index-1]
 
 
+def resizeAll(dir):
+	start_time = time.time()
+	directory = os.fsencode(dir)
+	filecount = 0
+	for file in os.listdir(directory):
+	    filecount += 1
+	    filename = os.fsdecode(file)
+	    print(filename)
+	    if filename.endswith(".png") or filename.endswith(".jpg"): 
+	        path = ".\\" + dir + "\\" + filename
+	        img = cv.imread(path)
+	        scaledface = cv.resize(img,(224,224))
+	        
+	        cv.imwrite('.\\'+ dir+ '\\' + filename ,scaledface)
+
+	print(filecount ," files resized in Time:" , time.time() - start_time)
 
 
+#cropAllWithDeep("test2","test_deep","test_2")
+
+#cropAllFaces("test_2","testfaces_2_haar","test2")
+
+#resizeAll("valid_deleted")
+
+#labelAll()
+
+
+img = cv.imread("./train_1/001968.jpg")
+face = detect_face(img)
+cv.imshow("a",face)
+cv.waitKey()
