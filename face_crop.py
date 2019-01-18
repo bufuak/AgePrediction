@@ -89,6 +89,7 @@ def cropAllWithDeep(dir,destination,backup):
 			face,returnValue = detect_face_deep(img)
 			if returnValue == 0:
 				f.write(path)
+				cv.imwrite('.\\'+ destination + '\\' + filename ,img)
 			else:
 				cv.imwrite('.\\'+ destination + '\\' + filename ,face)
 				os.rename(path, '.\\' + backup + '\\' + filename)
@@ -125,19 +126,19 @@ def cropAllFaces(dir,destination,backup):
 def labelAll():
 	bins = [0.0, 6.0, 13.0, 20.0, 27.0, 34.0, 41.0, 48.0, 55.0, 62.0,np.inf]
 	labels = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
-	# with open('ground_truth/train_gt.csv', 'r') as f:
-	#     reader = csv.reader(f)
-	#     mydict = dict((rows[0],rows[1]) for rows in reader)
-	# labelSplit("train_deep",mydict,bins,labels)
+	with open('ground_truth/train_gt.csv', 'r') as f:
+		reader = csv.reader(f)
+		mydict = dict((rows[0],rows[1]) for rows in reader)
+	labelSplit("train",mydict,bins,labels)
 
-	# with open('ground_truth/valid_gt.csv', 'r') as f:
-	#     reader = csv.reader(f)
-	#     mydict = dict((rows[0],rows[1]) for rows in reader)
-	# labelSplit("valid_deep",mydict,bins,labels)
+	with open('ground_truth/valid_gt.csv', 'r') as f:
+		reader = csv.reader(f)
+		mydict = dict((rows[0],rows[1]) for rows in reader)
+	labelSplit("valid",mydict,bins,labels)
 	with open('ground_truth/test_gt.csv', 'r') as f:
-	    reader = csv.reader(f)
-	    mydict = dict((rows[0],rows[1]) for rows in reader)
-	labelSplit("test_deep",mydict,bins,labels)
+		reader = csv.reader(f)
+		mydict = dict((rows[0],rows[1]) for rows in reader)
+	labelSplit("test",mydict,bins,labels)
 
 
 def labelSplit(dir,mydict,bins,labels):
@@ -155,6 +156,48 @@ def labelSplit(dir,mydict,bins,labels):
 	        #os.rename(path, '.\\' + backup + '\\' + filename)
 
 	#print(filecount , " files cropped in Time:" , time.time() - start_time)
+
+
+def labelRanking():
+	bins = [0.0, 6.0, 13.0, 20.0, 27.0, 34.0, 41.0, 48.0, 55.0, 62.0,np.inf]
+	labels = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+
+	train_directory = "dataset_train"
+	valid_directory = "dataset_valid"
+
+	for label in labels:
+		labelname = str(label)
+		if not os.path.exists(labelname):
+			os.makedirs(labelname,exist_ok=True)
+			os.makedirs(labelname+"/0",exist_ok=True)
+			os.makedirs(labelname+"/1",exist_ok=True)
+			os.makedirs(labelname+"_valid",exist_ok=True)
+			os.makedirs(labelname+"_valid/0",exist_ok=True)
+			os.makedirs(labelname+"_valid/1",exist_ok=True)
+
+		for dirName, subdirList, fileList in os.walk(train_directory):
+			#print('Found directory: %s' % dirName)
+			for fname in fileList:
+				if fname.endswith(".png") or fname.endswith(".jpg"):
+					path = dirName + "\\" + fname	
+					print(fname)
+					if (int(dirName[-1]) <= label):
+						shutil.copy2(path,labelname+'\\'+str(0))
+					else:
+						shutil.copy2(path,labelname+'\\'+str(1))
+
+		for dirName, subdirList, fileList in os.walk(valid_directory):
+			#print('Found directory: %s' % dirName)
+			for fname in fileList:
+				if fname.endswith(".png") or fname.endswith(".jpg"):
+					path = dirName + "\\" + fname	
+					print(fname)
+					if (int(dirName[-1]) <= label):
+						shutil.copy2(path,labelname+"_valid\\"+str(0))
+					else:
+						shutil.copy2(path,labelname+"_valid\\"+str(1))
+
+
 
 
 def arrangeLabel(age,bins,labels):
@@ -184,16 +227,11 @@ def resizeAll(dir):
 	print(filecount ," files resized in Time:" , time.time() - start_time)
 
 
-#cropAllWithDeep("test2","test_deep","test_2")
+#cropAllWithDeep("valid","valid_cropped","valid_")
 
 #cropAllFaces("test_2","testfaces_2_haar","test2")
 
 #resizeAll("valid_deleted")
 
 #labelAll()
-
-
-img = cv.imread("./train_1/001968.jpg")
-face = detect_face(img)
-cv.imshow("a",face)
-cv.waitKey()
+labelRanking()
